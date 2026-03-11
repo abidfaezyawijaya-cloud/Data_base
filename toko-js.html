@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Toko — Manajemen Produk</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:      #f0f4ff;
+    --surface: #ffffff;
+    --primary: #4f46e5;
+    --primary-dark: #4338ca;
+    --danger:  #ef4444;
+    --success: #22c55e;
+    --warning: #f59e0b;
+    --text:    #0f172a;
+    --muted:   #64748b;
+    --border:  #e2e8f0;
+    --radius:  14px;
+    --shadow:  0 2px 16px rgba(0,0,0,.07);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,.13);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* TOPBAR */
+  .topbar {
+    background: var(--primary);
+    color: #fff;
+    height: 60px;
+    padding: 0 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 16px rgba(79,70,229,.4);
+  }
+  .brand { font-size: 1.1rem; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+  #total-badge {
+    background: rgba(255,255,255,.2);
+    padding: 4px 14px; border-radius: 50px;
+    font-size: .8rem; font-weight: 600;
+  }
+
+  .main { max-width: 1100px; margin: 0 auto; padding: 28px 20px; }
+
+  /* STATS */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(155px,1fr));
+    gap: 14px; margin-bottom: 24px;
+  }
+  .stat-card {
+    background: var(--surface); border-radius: var(--radius);
+    padding: 18px 20px; box-shadow: var(--shadow);
+    border-left: 4px solid var(--primary);
+  }
+  .stat-card.g { border-color: var(--success); }
+  .stat-card.y { border-color: var(--warning); }
+  .stat-card.r { border-color: var(--danger); }
+  .s-label { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+  .s-val   { font-size: 1.6rem; font-weight: 800; margin-top: 3px; }
+
+  /* TOOLBAR */
+  .toolbar {
+    background: var(--surface); border-radius: var(--radius);
+    padding: 14px 18px;
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+    box-shadow: var(--shadow); margin-bottom: 18px;
+  }
+  .toolbar input[type=text], .toolbar select {
+    border: 1.5px solid var(--border); border-radius: 9px;
+    padding: 8px 14px; font-family: inherit; font-size: .88rem;
+    background: var(--bg); color: var(--text);
+    outline: none; transition: border-color .2s;
+  }
+  .toolbar input[type=text]:focus, .toolbar select:focus { border-color: var(--primary); }
+  .toolbar input[type=text] { min-width: 210px; }
+  .spacer { flex: 1; }
+
+  /* BUTTONS */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 18px; border: none; border-radius: 9px;
+    font-family: inherit; font-size: .88rem; font-weight: 700;
+    cursor: pointer; transition: all .15s; outline: none;
+  }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(79,70,229,.4); }
+  .btn-danger  { background: var(--danger); color: #fff; }
+  .btn-danger:hover  { background: #dc2626; transform: translateY(-1px); }
+  .btn-ghost   { background: transparent; color: var(--muted); border: 1.5px solid var(--border); }
+  .btn-ghost:hover   { border-color: var(--primary); color: var(--primary); }
+  .btn-sm   { padding: 6px 12px; font-size: .78rem; }
+  .btn-icon { padding: 7px; border-radius: 8px; }
+
+  /* TABLE */
+  .table-wrap {
+    background: var(--surface); border-radius: var(--radius);
+    box-shadow: var(--shadow); overflow-x: auto;
+  }
+  table { width: 100%; border-collapse: collapse; min-width: 560px; }
+  thead { background: #f8fafc; }
+  th {
+    padding: 12px 16px; text-align: left;
+    font-size: .7rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .8px;
+    color: var(--muted); border-bottom: 1.5px solid var(--border);
+    white-space: nowrap;
+  }
+  td { padding: 13px 16px; font-size: .875rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f8faff; }
+  .td-name  { font-weight: 700; }
+  .td-desc  { color: var(--muted); font-size: .8rem; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .badge    { display: inline-block; padding: 3px 10px; border-radius: 50px; font-size: .72rem; font-weight: 700; background: #eef2ff; color: var(--primary); }
+  .stok-low { color: var(--danger); font-weight: 700; }
+  .actions  { display: flex; gap: 6px; }
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
+  .empty-state .ei { font-size: 3rem; margin-bottom: 10px; }
+
+  /* MODAL */
+  .modal-bg {
+    position: fixed; inset: 0;
+    background: rgba(15,23,42,.5);
+    backdrop-filter: blur(5px);
+    z-index: 200;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    opacity: 0; pointer-events: none;
+    transition: opacity .2s;
+  }
+  .modal-bg.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--surface); border-radius: 20px;
+    box-shadow: var(--shadow-lg);
+    width: 100%; max-width: 480px; padding: 28px;
+    transform: translateY(24px) scale(.96);
+    transition: transform .28s cubic-bezier(.34,1.56,.64,1);
+  }
+  .modal-bg.open .modal { transform: translateY(0) scale(1); }
+  .modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 22px;
+  }
+  .modal-header h2 { font-size: 1.1rem; font-weight: 800; }
+  .close-btn {
+    background: var(--bg); border: none; border-radius: 8px;
+    width: 32px; height: 32px; cursor: pointer; font-size: 1rem;
+    display: flex; align-items: center; justify-content: center;
+    transition: background .15s;
+  }
+  .close-btn:hover { background: var(--border); }
+
+  .form-group { margin-bottom: 15px; }
+  .form-group label {
+    display: block; font-size: .75rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .8px;
+    color: var(--muted); margin-bottom: 6px;
+  }
+  .form-group input, .form-group textarea, .form-group select {
+    width: 100%; border: 1.5px solid var(--border); border-radius: 10px;
+    padding: 10px 14px; font-family: inherit; font-size: .9rem;
+    color: var(--text); background: var(--bg);
+    transition: border-color .2s; outline: none; resize: vertical;
+  }
+  .form-group input:focus, .form-group textarea:focus { border-color: var(--primary); background: #fff; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
+
+  /* CONFIRM */
+  .confirm-modal { max-width: 350px; text-align: center; }
+  .confirm-modal .ci { font-size: 2.6rem; margin-bottom: 10px; }
+  .confirm-modal p { color: var(--muted); margin: 8px 0 20px; font-size: .9rem; }
+
+  /* TOAST */
+  #toasts {
+    position: fixed; bottom: 24px; right: 24px;
+    display: flex; flex-direction: column; gap: 8px; z-index: 400;
+  }
+  .toast {
+    background: #0f172a; color: #fff;
+    padding: 12px 20px; border-radius: 12px;
+    font-size: .875rem; font-weight: 600;
+    box-shadow: var(--shadow-lg);
+    display: flex; align-items: center; gap: 8px;
+    animation: slideUp .3s ease;
+  }
+  .toast.ok  { background: #166534; }
+  .toast.err { background: #991b1b; }
+  @keyframes slideUp { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
+
+  @media (max-width: 580px) {
+    .form-row { grid-template-columns: 1fr; }
+    .toolbar input[type=text] { min-width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">🛍️ Toko — Manajemen Produk</div>
+  <div id="total-badge">0 Produk</div>
+</div>
+
+<div class="main">
+
+  <div class="stats">
+    <div class="stat-card">
+      <div class="s-label">Total Produk</div>
+      <div class="s-val" id="st-total">0</div>
+    </div>
+    <div class="stat-card g">
+      <div class="s-label">Total Stok</div>
+      <div class="s-val" id="st-stok">0</div>
+    </div>
+    <div class="stat-card y">
+      <div class="s-label">Rata-rata Harga</div>
+      <div class="s-val" id="st-harga">—</div>
+    </div>
+    <div class="stat-card r">
+      <div class="s-label">Stok Rendah (≤5)</div>
+      <div class="s-val" id="st-low">0</div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <input type="text" id="q-search" placeholder="🔍  Cari produk..." oninput="render()">
+    <select id="q-kat" onchange="render()">
+      <option value="">Semua Kategori</option>
+    </select>
+    <div class="spacer"></div>
+    <button class="btn btn-primary" onclick="openForm()">＋ Tambah Produk</button>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Nama Produk</th>
+          <th>Kategori</th>
+          <th>Deskripsi</th>
+          <th>Harga</th>
+          <th>Stok</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- MODAL FORM -->
+<div class="modal-bg" id="modal-form">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="form-title">Tambah Produk</h2>
+      <button class="close-btn" onclick="closeForm()">✕</button>
+    </div>
+    <div class="form-group">
+      <label>Nama Produk *</label>
+      <input type="text" id="f-nama" placeholder="Contoh: Kaos Polos Pria" maxlength="150">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Kategori *</label>
+        <input type="text" id="f-kat" placeholder="Pakaian, Sepatu…" list="kat-dl" maxlength="80">
+        <datalist id="kat-dl"></datalist>
+      </div>
+      <div class="form-group">
+        <label>Stok</label>
+        <input type="number" id="f-stok" placeholder="0" min="0">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Harga (Rp) *</label>
+      <input type="number" id="f-harga" placeholder="0" min="0" step="500">
+    </div>
+    <div class="form-group">
+      <label>Deskripsi</label>
+      <textarea id="f-desc" rows="3" placeholder="Deskripsi singkat produk…" maxlength="300"></textarea>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="closeForm()">Batal</button>
+      <button class="btn btn-primary" onclick="saveProduk()">💾 Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL KONFIRMASI HAPUS -->
+<div class="modal-bg" id="modal-del">
+  <div class="modal confirm-modal">
+    <div class="ci">🗑️</div>
+    <h2>Hapus Produk?</h2>
+    <p id="del-text">Tindakan ini tidak bisa dibatalkan.</p>
+    <div class="form-actions" style="justify-content:center">
+      <button class="btn btn-ghost" onclick="closeDel()">Batal</button>
+      <button class="btn btn-danger" id="del-confirm-btn">Ya, Hapus</button>
+    </div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+// ─── STORAGE ──────────────────────────────────────────────────────────────────
+const KEY = 'toko_produk';
+
+function getAll() {
+  try { return JSON.parse(localStorage.getItem(KEY)) || []; }
+  catch { return []; }
+}
+
+function saveAll(data) {
+  localStorage.setItem(KEY, JSON.stringify(data));
+}
+
+function genId() {
+  return Date.now() + Math.floor(Math.random() * 1000);
+}
+
+// Seed data contoh kalau masih kosong
+(function seed() {
+  if (getAll().length) return;
+  const contoh = [
+    { id: genId(), nama: 'Kemeja Flannel Pria',    kategori: 'Pakaian',  harga: 185000, stok: 42, deskripsi: 'Bahan katun flannel lembut, berbagai ukuran' },
+    { id: genId()+1, nama: 'Sepatu Sneakers Canvas', kategori: 'Sepatu',   harga: 320000, stok: 18, deskripsi: 'Sol karet anti-slip, nyaman sehari-hari' },
+    { id: genId()+2, nama: 'Tas Ransel Laptop 14"',  kategori: 'Tas',      harga: 275000, stok: 3,  deskripsi: 'Anti-air, kompartemen laptop khusus' },
+    { id: genId()+3, nama: 'Kacamata Hitam UV400',   kategori: 'Aksesori', harga: 95000,  stok: 60, deskripsi: 'Lensa pelindung UV400, bingkai ringan' },
+    { id: genId()+4, nama: 'Jam Tangan Casual',      kategori: 'Aksesori', harga: 450000, stok: 5,  deskripsi: 'Tali kulit genuine, water resistant 30m' },
+  ];
+  saveAll(contoh);
+})();
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let editId = null;
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+function render() {
+  const search = document.getElementById('q-search').value.toLowerCase();
+  const kat    = document.getElementById('q-kat').value;
+  let data = getAll();
+
+  // Filter
+  if (search) data = data.filter(p => p.nama.toLowerCase().includes(search) || (p.deskripsi||'').toLowerCase().includes(search));
+  if (kat)    data = data.filter(p => p.kategori === kat);
+
+  // Stats (dari semua data, bukan filtered)
+  const all = getAll();
+  document.getElementById('st-total').textContent = all.length;
+  document.getElementById('st-stok').textContent  = all.reduce((a,p) => a + (parseInt(p.stok)||0), 0);
+  document.getElementById('st-harga').textContent = all.length
+    ? rpShort(all.reduce((a,p) => a + parseFloat(p.harga||0), 0) / all.length) : '—';
+  document.getElementById('st-low').textContent   = all.filter(p => parseInt(p.stok) <= 5).length;
+  document.getElementById('total-badge').textContent = `${all.length} Produk`;
+
+  // Update kategori dropdown
+  const cats = [...new Set(all.map(p => p.kategori))].sort();
+  const qKat = document.getElementById('q-kat');
+  const cur  = qKat.value;
+  qKat.innerHTML = '<option value="">Semua Kategori</option>';
+  cats.forEach(c => qKat.innerHTML += `<option value="${c}"${c===cur?' selected':''}>${c}</option>`);
+
+  // Update datalist
+  const dl = document.getElementById('kat-dl');
+  dl.innerHTML = cats.map(c => `<option value="${c}">`).join('');
+
+  // Table
+  const tb = document.getElementById('tbody');
+  if (!data.length) {
+    tb.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="ei">📦</div>Tidak ada produk ditemukan</div></td></tr>`;
+    return;
+  }
+
+  tb.innerHTML = data.map((p, i) => `
+    <tr>
+      <td style="color:var(--muted);font-size:.78rem">${i+1}</td>
+      <td>
+        <div class="td-name">${esc(p.nama)}</div>
+      </td>
+      <td><span class="badge">${esc(p.kategori)}</span></td>
+      <td class="td-desc">${esc(p.deskripsi || '—')}</td>
+      <td><strong>${rp(p.harga)}</strong></td>
+      <td class="${parseInt(p.stok)<=5?'stok-low':''}">${p.stok}</td>
+      <td>
+        <div class="actions">
+          <button class="btn btn-ghost btn-sm btn-icon" onclick="openEdit(${p.id})" title="Edit">✏️</button>
+          <button class="btn btn-danger btn-sm btn-icon" onclick="askDelete(${p.id},'${esc(p.nama)}')" title="Hapus">🗑</button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+// ─── FORM ─────────────────────────────────────────────────────────────────────
+function openForm(data = null) {
+  editId = data ? data.id : null;
+  document.getElementById('form-title').textContent = data ? 'Edit Produk' : 'Tambah Produk';
+  document.getElementById('f-nama').value  = data?.nama || '';
+  document.getElementById('f-kat').value   = data?.kategori || '';
+  document.getElementById('f-harga').value = data?.harga || '';
+  document.getElementById('f-stok').value  = data?.stok ?? '';
+  document.getElementById('f-desc').value  = data?.deskripsi || '';
+  document.getElementById('modal-form').classList.add('open');
+  setTimeout(() => document.getElementById('f-nama').focus(), 200);
+}
+
+function closeForm() {
+  document.getElementById('modal-form').classList.remove('open');
+  editId = null;
+}
+
+function openEdit(id) {
+  const p = getAll().find(x => x.id === id);
+  if (p) openForm(p);
+}
+
+function saveProduk() {
+  const nama      = document.getElementById('f-nama').value.trim();
+  const kategori  = document.getElementById('f-kat').value.trim();
+  const harga     = parseFloat(document.getElementById('f-harga').value);
+  const stok      = parseInt(document.getElementById('f-stok').value) || 0;
+  const deskripsi = document.getElementById('f-desc').value.trim();
+
+  if (!nama)               { flash('f-nama');    toast('Nama produk wajib diisi', 'err'); return; }
+  if (!kategori)           { flash('f-kat');     toast('Kategori wajib diisi', 'err'); return; }
+  if (isNaN(harga)||harga<0) { flash('f-harga'); toast('Harga tidak valid', 'err'); return; }
+
+  let data = getAll();
+  if (editId) {
+    data = data.map(p => p.id === editId ? {...p, nama, kategori, harga, stok, deskripsi} : p);
+    toast('Produk berhasil diupdate ✓', 'ok');
+  } else {
+    data.push({ id: genId(), nama, kategori, harga, stok, deskripsi, createdAt: Date.now() });
+    toast('Produk berhasil ditambahkan ✓', 'ok');
+  }
+
+  saveAll(data);
+  closeForm();
+  render();
+}
+
+// ─── DELETE ───────────────────────────────────────────────────────────────────
+let deleteId = null;
+
+function askDelete(id, nama) {
+  deleteId = id;
+  document.getElementById('del-text').textContent = `Hapus "${nama}"? Tindakan ini tidak bisa dibatalkan.`;
+  document.getElementById('modal-del').classList.add('open');
+}
+
+function closeDel() {
+  document.getElementById('modal-del').classList.remove('open');
+  deleteId = null;
+}
+
+document.getElementById('del-confirm-btn').onclick = function () {
+  if (!deleteId) return;
+  saveAll(getAll().filter(p => p.id !== deleteId));
+  toast('Produk berhasil dihapus', 'ok');
+  closeDel();
+  render();
+};
+
+// ─── UTILS ────────────────────────────────────────────────────────────────────
+function esc(s = '') {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function rp(n) { return 'Rp ' + parseInt(n).toLocaleString('id-ID'); }
+
+function rpShort(n) {
+  if (n >= 1e6) return 'Rp ' + (n/1e6).toFixed(1) + 'jt';
+  if (n >= 1e3) return 'Rp ' + (n/1e3).toFixed(0) + 'rb';
+  return 'Rp ' + Math.round(n);
+}
+
+function toast(msg, type = '') {
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.innerHTML = (type==='ok'?'✅ ':type==='err'?'❌ ':'ℹ️ ') + msg;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(() => { el.style.opacity='0'; el.style.transition='opacity .3s'; setTimeout(()=>el.remove(), 300); }, 2800);
+}
+
+function flash(id) {
+  const el = document.getElementById(id);
+  el.style.borderColor = 'var(--danger)';
+  el.focus();
+  setTimeout(() => el.style.borderColor = '', 1500);
+}
+
+// Close modal on backdrop click
+['modal-form','modal-del'].forEach(id => {
+  document.getElementById(id).addEventListener('click', e => {
+    if (e.target.id === id) { if(id==='modal-form') closeForm(); else closeDel(); }
+  });
+});
+
+// Keyboard ESC
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeForm(); closeDel(); }
+});
+
+// Init
+render();
+</script>
+</body>
+</html>
